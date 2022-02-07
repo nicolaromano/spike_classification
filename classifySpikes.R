@@ -103,7 +103,7 @@ get_aps <- function(trace,
   })
 
   # Go forward until we hit minimum to find the AHP
-  res <- apply(cbind(start, maxima), 1, function(sm) {
+  stop <- apply(cbind(start, maxima), 1, function(sm) {
     to <- sm["maxima"] + max_ap_len - (sm["maxima"]-sm["start"])
   
     ahp_min <- which.min(trace$Voltage[sm["maxima"]:to]) + sm["maxima"]
@@ -112,18 +112,17 @@ get_aps <- function(trace,
     if (!length(end))
       end <- to
     
-    res <- c(ahp_min, end)
-    res
+    end ## We'll find the minimum later, after ensuring the max is ok
   })
-  
-  min <- res[1,]
-  stop <- res[2,]
-  
   
   # We want to make sure APs don't overlap
   # Check if any start comes before the stop of the previous AP
   overlapping <- which(start[-1] < stop[1:length(stop)-1])
-  start[overlapping+1] <- stop[overlapping] + 1
+  stop[overlapping] <- start[overlapping+1] - 1
+  
+  minima <- apply(cbind(maxima, stop), 1, function(ms){
+    res <- which.min(trace$Voltage[ms["maxima"]:ms["stop"]]) + ms["maxima"]
+  })
 
   duration <- stop - start
 
@@ -152,7 +151,7 @@ get_aps <- function(trace,
     start = start[to_keep],
     stop = stop[to_keep],
     duration = duration[to_keep],
-    min = min[to_keep],
+    min = minima[to_keep],
     max = maxima[to_keep],
     aps = aps
   )
@@ -213,11 +212,11 @@ plot_aps <- function(trace, aps,
   p
 }
 
-trace <- traces[[5]]
+trace <- traces[[1]]
 
 aps <- get_aps(trace,
   baseline_quantile = 0.5,
-  max_ap_len = 1500,
+  max_ap_len = 500,
   verbose = TRUE
 )
 
