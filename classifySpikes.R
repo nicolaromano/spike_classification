@@ -1,11 +1,18 @@
 library(ggplot2)
 library(patchwork)
+library(here)
 
 # Get names of txt files
-filenames <- dir(path = "example_traces", pattern = "txt")
+filenames <- dir(path = "example_traces/", pattern = "txt")
+
+if (length(filenames)) {
+  print(paste("Found", length(filenames), "traces."))
+  } else {
+  stop("No traces found")
+  }
 
 # Read in data
-traces <- lapply(filenames, function(f) {
+traces <- lapply(paste0("example_traces/", filenames), function(f) {
   t <- read.table(f, header = TRUE)
   names(t) <- c("Time", "Voltage")
   t
@@ -206,11 +213,11 @@ plot_aps <- function(trace, aps,
   p
 }
 
-trace <- traces[[1]]
+trace <- traces[[5]]
 
 aps <- get_aps(trace,
   baseline_quantile = 0.5,
-  max_ap_len = 500,
+  max_ap_len = 1500,
   verbose = TRUE
 )
 
@@ -220,5 +227,5 @@ p <- lapply(aps$aps, function(ap){
   ggplot(ap, aes(Time, Voltage)) + geom_line()
   })
 
-# wrap_plots(p)
+wrap_plots(p)
 
