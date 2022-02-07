@@ -223,8 +223,39 @@ aps <- get_aps(trace,
 plot_aps(trace, aps) 
 
 p <- lapply(aps$aps, function(ap){
-  ggplot(ap, aes(Time, Voltage)) + geom_line()
+  ggplot(ap, aes(x = Time-min(Time), y = Voltage)) + geom_line()
   })
+
+wrap_plots(p)
+
+
+##### PCA ANALYSIS #####
+
+# Now we want to align spikes on the maximum
+dist_to_max <- sapply(aps$aps, function(x) {
+  max_pos <- which.max(x$Voltage)
+  max_to_end <- nrow(x) - max_pos
+  
+  c(start_to_max = max_pos, max_to_end = max_to_end)
+})
+
+max_left <- max(dist_to_max[1,])
+max_right <- max(dist_to_max[2,])
+
+padded_aps <- sapply(1:length(aps$aps), function(i) {
+  ap <- aps$aps[[i]]$Voltage
+  ap <- c(rep(ap[1], max_left - dist_to_max[1,i]), ap)
+  ap <- c(ap, rep(ap[length(ap)], max_right - dist_to_max[2,i]))
+  
+  ap
+})
+
+padded_aps <- data.frame(padded_aps)
+
+p <- apply(padded_aps, 2, function(ap){
+  ggplot(data.frame(Sample = seq_along(ap), Voltage = ap), aes(x = Sample, y = Voltage)) + 
+    geom_line()
+})
 
 wrap_plots(p)
 
